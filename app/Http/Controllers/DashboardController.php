@@ -1,0 +1,37 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use illuminate\Support\Facades\Auth;
+
+use App\TransactionDetail;
+use App\User;
+
+class DashboardController extends Controller
+{
+    /**
+     * Show the application dashboard.
+     *
+     * @return \Illuminate\Contracts\Support\Renderable
+     */
+    
+    public function index()
+    {
+        $transactions = TransactionDetail::with(['transaction.user','product.galleries'])
+                            ->whereHas('transaction', function($transaction){
+                                $transaction->where('users_id', Auth::user()->id);
+                            });
+
+        $revenue = $transactions->get()->reduce(function ($carry, $item){
+            return $carry + $item->price;
+        });
+
+        return view('pages.dashboard',[
+            'transaction_count' => $transactions->count(),
+            'transaction_data' => $transactions->get(),
+            'revenue' => $revenue,
+        ]);
+    }
+
+}
